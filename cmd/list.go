@@ -33,6 +33,9 @@ Examples:
 }
 
 func runList(cmd *cobra.Command, args []string) {
+	// Get flag values
+	cwdFile, _ := cmd.Flags().GetString("cwd-file")
+
 	// Initialize app (loads config, database, and service)
 	appInstance := app.InitializeOrExit()
 	defer appInstance.Close()
@@ -49,6 +52,11 @@ func runList(cmd *cobra.Command, args []string) {
 	// Create TUI model
 	model := list.New(appInstance.Service, initialCategory)
 
+	// Set cwd file mode if flag is provided
+	if cwdFile != "" {
+		model.SetCwdFile(cwdFile)
+	}
+
 	// Create Bubble Tea program
 	program := tea.NewProgram(model, tea.WithAltScreen())
 
@@ -60,13 +68,13 @@ func runList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Handle any final state from the model
-	if listModel, ok := finalModel.(list.Model); ok {
-		_ = listModel // We could handle final state here if needed
-	}
+	// Handle any final state from the model - no additional handling needed
+	// as the model writes to the file directly when a selection is made
+	_ = finalModel
 }
 
 // GetListCmd returns the list command
 func GetListCmd() *cobra.Command {
+	listCmd.Flags().String("cwd-file", "", "Write the selection to the specified file and exit")
 	return listCmd
 }

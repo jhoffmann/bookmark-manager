@@ -28,11 +28,6 @@ cd bookmark-manager
 CGO_ENABLED=1 go build -o bookmark-manager .
 ```
 
-### Requirements
-
-- Go 1.24 or later
-- CGO enabled (for SQLite support)
-
 ## 📖 Usage
 
 ### Basic Commands
@@ -45,7 +40,7 @@ CGO_ENABLED=1 go build -o bookmark-manager .
 ./bookmark-manager add [category]
 
 # Launch interactive TUI browser
-./bookmark-manager list [category] [filter]  
+./bookmark-manager list [category]
 
 # Export bookmarks to JSON
 ./bookmark-manager export [category] [filter]
@@ -54,74 +49,53 @@ CGO_ENABLED=1 go build -o bookmark-manager .
 ### Examples
 
 ```bash
-# Add the current folder to the "work" category
-./bookmark-manager add work
+# Add the current folder
+./bookmark-manager add
 
 # Add to a custom category
-./bookmark-manager add "urgent-projects"
+./bookmark-manager add "personal"
 
 # Launch TUI showing all bookmarks
 ./bookmark-manager list
 
-# Launch TUI filtered to "personal" category  
+# Launch TUI filtered to "personal" category
 ./bookmark-manager list personal
 
 # Export all bookmarks to JSON
 ./bookmark-manager export > my-bookmarks.json
 
 # Export only work bookmarks
-./bookmark-manager export work > work-bookmarks.json
+./bookmark-manager export personal > personal-bookmarks.json
 
 # Export filtered bookmarks
 ./bookmark-manager export "" projects > project-bookmarks.json
 ```
 
-## 🎮 TUI Interface
+### Shell Integration
 
-### Navigation
+Here is a handy shell function to switch the current directory rather than opening a new terminal/explorer:
 
-| Key | Action |
-|-----|--------|
-| `↑/k`, `↓/j` | Navigate up/down |
-| `Tab` | Next category tab |
-| `Shift+Tab` | Previous category tab |
-| `/` | Focus filter input |
-| `Ctrl+U` | Clear filter |
-| `Enter`, `o` | Open folder in system file manager |
-| `x`, `d` | Delete bookmark (with confirmation) |
-| `?` | Toggle help |
-| `q`, `Esc`, `Ctrl+C` | Quit |
+```bash
+function bm() {
+    local tmp="$(mktemp -t "bookmark-manager-cwd.XXXXXX")"
+    bookmark-manager list "$@" --cwd-file="$tmp"
+    if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+}
 
-### Interface Layout
+# See bookmark-manager completion for your shell
+eval "$(bookmark-manager completion bash)"
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ [All] [default] [work] [personal] [custom-categories...]    │
-├─────────────────────────────────────────────────────────────┤
-│ Filter: search_term_here                                    │
-├─────────────────────────────────────────────────────────────┤
-│ > /home/user/projects/important-project      [work]         │
-│   /home/user/documents/taxes                 [personal]     │
-│   /tmp/downloads                             [default]      │
-│   ...                                                       │
-├─────────────────────────────────────────────────────────────┤
-│ 23 bookmarks • ? for help • q to quit                      │
-└─────────────────────────────────────────────────────────────┘
 ```
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BM_DATABASE` | Path to SQLite database | `~/.config/bookmark-manager/bookmarks.db` (Linux)<br>`~/Library/Application Support/bookmark-manager/bookmarks.db` (macOS)<br>`%APPDATA%/bookmark-manager/bookmarks.db` (Windows) |
-| `BM_LOGLEVEL` | Logging level | `warn` |
-
 ### Cross-Platform Database Locations
 
 - **Linux**: `~/.config/bookmark-manager/bookmarks.db`
-- **macOS**: `~/Library/Application Support/bookmark-manager/bookmarks.db`  
+- **macOS**: `~/Library/Application Support/bookmark-manager/bookmarks.db`
 - **Windows**: `%APPDATA%/bookmark-manager/bookmarks.db`
 
 The application automatically creates the directory if it doesn't exist.
@@ -133,7 +107,7 @@ The application automatically creates the directory if it doesn't exist.
   {
     "id": 1,
     "folder": "/home/user/projects/awesome-project",
-    "category": "work", 
+    "category": "work",
     "date_created": "2024-01-15T10:30:00Z"
   },
   {
@@ -145,111 +119,14 @@ The application automatically creates the directory if it doesn't exist.
 ]
 ```
 
-## 🏗️ Architecture
-
-### Project Structure
-
-```
-bookmark-manager/
-├── cmd/                    # CLI commands
-│   ├── add.go             # Add bookmark command
-│   ├── export.go          # Export to JSON command
-│   ├── list.go            # Interactive TUI command
-│   └── integration_test.go # CLI integration tests
-├── internal/
-│   ├── bookmark/          # Core bookmark logic
-│   │   ├── bookmark.go    # Bookmark model and operations
-│   │   └── bookmark_test.go
-│   ├── config/            # Configuration management
-│   │   ├── config.go      # Config loading and defaults
-│   │   └── config_test.go
-│   ├── database/          # Database layer
-│   │   ├── database.go    # SQLite + GORM integration
-│   │   └── database_test.go
-│   └── tui/               # Terminal User Interface
-│       ├── styles/        # Lipgloss styling
-│       ├── list/          # Main list interface
-│       └── confirm/       # Confirmation dialogs
-├── main.go                # Application entry point
-├── go.mod                 # Go module definition
-└── README.md              # This file
-```
-
-### Key Technologies
-
-- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)**: TUI framework
-- **[Lipgloss](https://github.com/charmbracelet/lipgloss)**: Terminal styling
-- **[Bubbles](https://github.com/charmbracelet/bubbles)**: TUI components
-- **[Cobra](https://github.com/spf13/cobra)**: CLI framework
-- **[GORM](https://gorm.io/)**: ORM for database operations
-- **SQLite**: Local database storage
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-CGO_ENABLED=1 go test ./...
-
-# Run with coverage
-CGO_ENABLED=1 go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-
-# Run integration tests
-CGO_ENABLED=1 go test ./cmd/ -v
-```
-
-**Current Test Coverage: 78.4%** across all packages, exceeding our 80% requirement for individual packages.
-
-## 🛠️ Development
-
-### Adding New Features
-
-The modular architecture makes it easy to extend:
-
-1. **New Commands**: Add to `cmd/` directory and register in `main.go`
-2. **UI Components**: Create in `internal/tui/` with consistent styling
-3. **Database Operations**: Extend `internal/bookmark/` package
-4. **Configuration**: Add options to `internal/config/`
-
-### Code Style
-
-- Full godoc comments for all exported functions
-- Comprehensive error handling with context
-- Table-driven tests for thorough coverage
-- Consistent styling using the `internal/tui/styles` package
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Maintain test coverage above 80% for new packages
-- Follow the existing code style and patterns
-- Add tests for all new functionality
-- Update documentation for user-facing changes
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - [Charm](https://charm.sh/) for the amazing Bubble Tea ecosystem
-- [GORM](https://gorm.io/) for excellent ORM capabilities  
+- [GORM](https://gorm.io/) for excellent ORM capabilities
 - [Cobra](https://cobra.dev/) for powerful CLI framework
 - The Go community for excellent tooling and libraries
-
-## 📞 Support
-
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/jhoffmann/bookmark-manager/issues)
-- 💡 **Feature Requests**: [GitHub Issues](https://github.com/jhoffmann/bookmark-manager/issues)
-- 📧 **Questions**: Create a discussion on GitHub
 
 ---
 
 **Built with ❤️ using Go and Bubble Tea** 🫧🍃
+

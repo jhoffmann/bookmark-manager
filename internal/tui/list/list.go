@@ -3,6 +3,7 @@ package list
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"sort"
@@ -35,6 +36,7 @@ type Model struct {
 	showingDialog  bool
 	windowSize     tea.WindowSizeMsg
 	err            error
+	cwdFile        string
 }
 
 // bookmarkItem implements list.Item for use with bubbles/list
@@ -417,6 +419,15 @@ func (m *Model) deleteBookmark(b *bookmark.Bookmark) tea.Cmd {
 
 func (m *Model) openFolder(path string) tea.Cmd {
 	return func() tea.Msg {
+		// In cwd-file mode, write the path to file and quit
+		if m.cwdFile != "" {
+			if err := os.WriteFile(m.cwdFile, []byte(path), 0644); err != nil {
+				return errMsg{fmt.Errorf("failed to write to cwd file: %w", err)}
+			}
+			return tea.Quit()
+		}
+
+		// Normal mode: open in file manager
 		var cmd *exec.Cmd
 
 		switch runtime.GOOS {
@@ -450,4 +461,15 @@ type bookmarkDeletedMsg struct{}
 
 type errMsg struct {
 	err error
+}
+
+// SetCwdFile sets the cwd file path for the model
+func (m *Model) SetCwdFile(filepath string) {
+	m.cwdFile = filepath
+	if filepath != "" {
+		// Update the list title to indicate cwd-file mode
+		if m.list.Title != "" {
+			m.list.Title = m.list.Title + " (Select Mode)"
+		}
+	}
 }
