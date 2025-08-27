@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/confirm"
+	"github.com/jhoffmann/bookmark-manager/internal/tui/edit"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/styles"
 )
 
@@ -33,7 +34,9 @@ type Model struct {
 	service        *bookmark.Service
 	keys           keyMap
 	confirmDialog  confirm.Model
+	editDialog     edit.Model
 	showingDialog  bool
+	showingEdit    bool
 	windowSize     tea.WindowSizeMsg
 	err            error
 	cwdFile        string
@@ -61,6 +64,7 @@ type keyMap struct {
 	NextTab     key.Binding
 	PrevTab     key.Binding
 	Delete      key.Binding
+	Edit        key.Binding
 	Filter      key.Binding
 	Quit        key.Binding
 	ClearFilter key.Binding
@@ -81,6 +85,10 @@ func DefaultKeyMap() keyMap {
 		Delete: key.NewBinding(
 			key.WithKeys("x", "d"),
 			key.WithHelp("x/d", "delete bookmark"),
+		),
+		Edit: key.NewBinding(
+			key.WithKeys("e"),
+			key.WithHelp("e", "edit category"),
 		),
 		Filter: key.NewBinding(
 			key.WithKeys("/"),
@@ -128,6 +136,7 @@ func New(service *bookmark.Service, initialCategory string) Model {
 			keys.Filter,
 			keys.ClearFilter,
 			keys.Enter,
+			keys.Edit,
 			keys.Delete,
 			keys.Quit,
 		}
@@ -141,6 +150,7 @@ func New(service *bookmark.Service, initialCategory string) Model {
 		filterFocused:  false,
 		keys:           keys,
 		confirmDialog:  confirm.New(),
+		editDialog:     edit.New(),
 		service:        service,
 	}
 }
@@ -208,6 +218,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, confirmCmd
 	}
 
+	// Handle edit dialog
+	if m.showingEdit {
+		newEdit, editCmd := m.editDialog.Update(msg)
+		m.editDialog = newEdit
+
+		// Check if user made a choice
+		if m.editDialog.HasResult() {
+			m.showingEdit = false
+			result := m.editDialog.GetResult()
+			if result.Submitted && result.Bookmark != nil {
+				return m, m.updateBookmarkCategory(result.Bookmark, result.NewCategory)
+			}
+		}
+
+		return m, editCmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg // Store the current window size
@@ -267,6 +294,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case key.Matches(msg, m.keys.Edit):
+			if selectedItem, ok := m.list.SelectedItem().(bookmarkItem); ok {
+				m.editDialog.Show(selectedItem.bookmark)
+				m.showingEdit = true
+			}
+
 		case key.Matches(msg, m.keys.Enter):
 			if selectedItem, ok := m.list.SelectedItem().(bookmarkItem); ok {
 				return m, m.openFolder(selectedItem.bookmark.Folder)
@@ -315,6 +348,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case bookmarkDeletedMsg:
 		return m, m.LoadBookmarks() // Reload bookmarks
 
+	case bookmarkUpdatedMsg:
+		return m, m.LoadBookmarks() // Reload bookmarks
+
 	case errMsg:
 		m.err = msg.err
 	}
@@ -330,6 +366,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	if m.showingDialog {
 		return m.confirmDialog.View()
+	}
+
+	if m.showingEdit {
+		return m.editDialog.View()
 	}
 
 	// Render filter if focused or has value
@@ -431,6 +471,19 @@ func (m *Model) deleteBookmark(b *bookmark.Bookmark) tea.Cmd {
 	}
 }
 
+func (m *Model) updateBookmarkCategory(b *bookmark.Bookmark, newCategory string) tea.Cmd {
+	return func() tea.Msg {
+		// Update the bookmark's category
+		b.Category = bookmark.CategoryType(newCategory)
+
+		// Save the updated bookmark
+		if err := b.Save(m.service); err != nil {
+			return errMsg{err}
+		}
+		return bookmarkUpdatedMsg{}
+	}
+}
+
 func (m *Model) openFolder(path string) tea.Cmd {
 	return func() tea.Msg {
 		// In cwd-file mode, write the path to file and quit
@@ -472,6 +525,8 @@ type bookmarksFilteredMsg struct {
 }
 
 type bookmarkDeletedMsg struct{}
+
+type bookmarkUpdatedMsg struct{}
 
 type errMsg struct {
 	err error
