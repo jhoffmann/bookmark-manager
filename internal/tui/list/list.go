@@ -60,7 +60,6 @@ type keyMap struct {
 	PrevTab     key.Binding
 	Delete      key.Binding
 	Filter      key.Binding
-	Open        key.Binding
 	Quit        key.Binding
 	ClearFilter key.Binding
 	Enter       key.Binding
@@ -84,10 +83,6 @@ func DefaultKeyMap() keyMap {
 		Filter: key.NewBinding(
 			key.WithKeys("/"),
 			key.WithHelp("/", "filter bookmarks"),
-		),
-		Open: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "open folder"),
 		),
 		Quit: key.NewBinding(
 			key.WithKeys("q", "esc", "ctrl+c"),
@@ -120,13 +115,29 @@ func New(service *bookmark.Service, initialCategory string) Model {
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(false) // We handle filtering ourselves
 
+	// Create the model first so we can reference it in the closure
+	keys := DefaultKeyMap()
+
+	// Set up additional help keys that show in full help view
+	l.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			keys.NextTab,
+			keys.PrevTab,
+			keys.Filter,
+			keys.ClearFilter,
+			keys.Enter,
+			keys.Delete,
+			keys.Quit,
+		}
+	}
+
 	return Model{
 		list:           l,
 		categories:     []string{"All"},
 		activeCategory: initialCategory,
 		filter:         filterInput,
 		filterFocused:  false,
-		keys:           DefaultKeyMap(),
+		keys:           keys,
 		confirmDialog:  confirm.New(),
 		service:        service,
 	}
@@ -252,7 +263,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case key.Matches(msg, m.keys.Open, m.keys.Enter):
+		case key.Matches(msg, m.keys.Enter):
 			if selectedItem, ok := m.list.SelectedItem().(bookmarkItem); ok {
 				return m, m.openFolder(selectedItem.bookmark.Folder)
 			}
