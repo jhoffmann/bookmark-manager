@@ -2,7 +2,8 @@
 
 A beautiful command-line bookmark manager for folders with an interactive Terminal User Interface (TUI) built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-![Bookmark Manager Demo](https://img.shields.io/badge/Status-Complete-success)
+![demo](https://github.com/jhoffmann/bookmark-manager/blob/main/demo/demo.gif?raw=true)
+
 ![Go Version](https://img.shields.io/badge/Go-1.24+-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -129,4 +130,3 @@ The application automatically creates the directory if it doesn't exist.
 ---
 
 **Built with ❤️ using Go and Bubble Tea** 🫧🍃
-

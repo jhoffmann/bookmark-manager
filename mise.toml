@@ -5,6 +5,10 @@ project = "bookmark-manager"
 description = "Run the application"
 run = "go run ."
 
+[tasks.demo]
+description = "Regenerate the demo recording"
+run = "cd demo && vhs demo.tape"
+
 [tasks.test]
 description = "Run tests"
 run = "go test -tags=coverage ./... -cover"
