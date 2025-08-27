@@ -13,7 +13,7 @@ import (
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list [category] [filter]",
+	Use:   "list [category]",
 	Short: "Interactive TUI for browsing bookmarks",
 	Long: `Launch an interactive TUI to browse, filter, and manage your bookmarks.
 
@@ -27,8 +27,8 @@ Features:
 Examples:
   bookmark-manager list
   bookmark-manager list work
-  bookmark-manager list personal home`,
-	Args: cobra.MaximumNArgs(2),
+  bookmark-manager list personal`,
+	Args: cobra.MaximumNArgs(1),
 	Run:  runList,
 }
 
@@ -39,7 +39,6 @@ func runList(cmd *cobra.Command, args []string) {
 
 	// Parse arguments
 	var initialCategory string
-	var initialFilter string
 
 	if len(args) > 0 && args[0] != "" {
 		initialCategory = args[0]
@@ -47,18 +46,8 @@ func runList(cmd *cobra.Command, args []string) {
 		initialCategory = "All"
 	}
 
-	if len(args) > 1 {
-		initialFilter = args[1]
-	}
-
 	// Create TUI model
 	model := list.New(appInstance.Service, initialCategory)
-
-	// Set initial filter if provided
-	if initialFilter != "" {
-		// We'll need to set this after the model is initialized
-		// For now, we'll handle this in the model's init
-	}
 
 	// Create Bubble Tea program
 	program := tea.NewProgram(model, tea.WithAltScreen())

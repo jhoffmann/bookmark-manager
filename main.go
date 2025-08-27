@@ -9,28 +9,24 @@ import (
 )
 
 func main() {
-	var rootCmd = &cobra.Command{
+	// Get subcommands
+	addCmd := cmd.GetAddCmd()
+	listCmd := cmd.GetListCmd()
+	exportCmd := cmd.GetExportCmd()
+
+	rootCmd := &cobra.Command{
 		Use:   "bookmark-manager",
 		Short: "A beautiful TUI bookmark manager for folders",
-		Long: `Bookmark Manager - A command-line tool for managing folder bookmarks with a beautiful terminal interface.
-
-Use this tool to:
-- Add folder bookmarks with custom categories
-- Browse bookmarks with an interactive TUI
-- Filter and search through your bookmarks
-- Export bookmarks to JSON
-
-Run without arguments to see this help, or use one of the subcommands.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			// Default to help when no subcommands
-			cmd.Help()
+		Run: func(rootCmd *cobra.Command, args []string) {
+			// Default to list command when no subcommands
+			listCmd.Run(rootCmd, args)
 		},
 	}
 
 	// Add subcommands
-	rootCmd.AddCommand(cmd.GetAddCmd())
-	rootCmd.AddCommand(cmd.GetListCmd())
-	rootCmd.AddCommand(cmd.GetExportCmd())
+	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(exportCmd)
 
 	// Execute root command
 	if err := rootCmd.Execute(); err != nil {
