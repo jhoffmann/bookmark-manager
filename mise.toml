@@ -24,16 +24,13 @@ run = "go vet ./..."
 [tasks.build]
 depends = ["build-linux", "build-windows"]
 description = "Build the project binaries"
-sources = ['go.mod', '*.go', '**/*.go']
 
 [tasks.build-linux]
 run = "go build -o build/{{vars.project}} ."
-outputs = ["build/{{vars.project}}"]
 
 [tasks.build-windows]
 env = { GOARCH = "amd64", GOOS = "windows" }
 run = "go build -o build/{{vars.project}}.exe ."
-outputs = ["build/{{vars.project}}.exe"]
 
 [tasks.build-container]
 quiet = true
