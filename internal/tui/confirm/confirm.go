@@ -33,8 +33,8 @@ type Model struct {
 // New creates a new confirmation model
 func New() Model {
 	items := []list.Item{
-		choiceItem{title: "No", description: "Cancel - don't delete", value: false},
 		choiceItem{title: "Yes", description: "Delete this bookmark", value: true},
+		choiceItem{title: "No", description: "Cancel - don't delete", value: false},
 	}
 
 	delegate := list.NewDefaultDelegate()
