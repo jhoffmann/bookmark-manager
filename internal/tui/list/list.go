@@ -282,6 +282,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.activeCategory = "All"
 		}
 
+		// Check if the current active category still exists
+		categoryExists := false
+		for _, cat := range m.categories {
+			if cat == m.activeCategory {
+				categoryExists = true
+				break
+			}
+		}
+
+		// If the current category no longer exists, switch to "All"
+		if !categoryExists {
+			m.activeCategory = "All"
+		}
+
 		// Update list title to show current category
 		m.list.Title = m.activeCategory
 
