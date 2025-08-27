@@ -5,7 +5,8 @@ A beautiful command-line bookmark manager for folders with an interactive Termin
 ![demo](https://github.com/jhoffmann/bookmark-manager/blob/main/demo/demo.gif?raw=true)
 
 ![Go Version](https://img.shields.io/badge/Go-1.24+-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/github/license/jhoffmann/bookmark-manager)
+![Commits](https://img.shields.io/github/commit-activity/t/jhoffmann/bookmark-manager)
 
 ## ✨ Features
 
