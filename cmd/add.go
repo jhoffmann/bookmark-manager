@@ -16,7 +16,6 @@ var addCmd = &cobra.Command{
 	Use:   "add [category]",
 	Short: "Add the current directory as a bookmark",
 	Long: `Add the current directory as a bookmark with an optional category.
-If no category is specified, it defaults to 'default'.
 
 Examples:
   bookmark-manager add
@@ -49,10 +48,11 @@ func runAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// Determine category
-	category := bookmark.DefaultCategory
+	var category bookmark.CategoryType
 	if len(args) > 0 && args[0] != "" {
 		category = bookmark.CategoryType(args[0])
 	}
+	// If no category provided, it will remain empty
 
 	// Check if bookmark already exists
 	existingBookmarks, err := bookmark.SearchByFolder(appInstance.Service, absPath)

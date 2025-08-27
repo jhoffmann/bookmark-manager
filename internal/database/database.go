@@ -69,7 +69,7 @@ type BookmarkModel struct {
 	ID          uint    `gorm:"primaryKey"`
 	Folder      string  `gorm:"not null"`
 	DateCreated string  `gorm:"type:datetime"`
-	Category    string  `gorm:"type:varchar(50);default:'default'"`
+	Category    string  `gorm:"type:varchar(50)"`
 	CreatedAt   string  `gorm:"type:datetime"`
 	UpdatedAt   string  `gorm:"type:datetime"`
 	DeletedAt   *string `gorm:"index;type:datetime"`

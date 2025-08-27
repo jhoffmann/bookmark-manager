@@ -37,7 +37,7 @@ func TestIntegration(t *testing.T) {
 	testBookmarks := []*bookmark.Bookmark{
 		{Folder: "/test/work/project1", Category: "work"},
 		{Folder: "/test/personal/docs", Category: "personal"},
-		{Folder: "/test/temp", Category: "default"},
+		{Folder: "/test/temp", Category: "test"},
 	}
 
 	for _, b := range testBookmarks {

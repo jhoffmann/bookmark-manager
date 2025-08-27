@@ -18,7 +18,7 @@ var listCmd = &cobra.Command{
 	Long: `Launch an interactive TUI to browse, filter, and manage your bookmarks.
 
 Features:
-- Tab through categories (All, default, and custom categories)
+- Tab through categories (All and custom categories)
 - Real-time filtering with '/' key
 - Delete bookmarks with 'x' key (with confirmation)
 - Open folders with 'o' or 'enter' key

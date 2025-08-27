@@ -13,15 +13,12 @@ import (
 // CategoryType represents the category of a bookmark
 type CategoryType string
 
-// DefaultCategory for when one isn't provided
-const DefaultCategory CategoryType = "default"
-
 // Bookmark represents a folder bookmark entry
 type Bookmark struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
 	Folder      string         `gorm:"not null" json:"folder"`
 	DateCreated time.Time      `json:"date_created"`
-	Category    CategoryType   `gorm:"type:varchar(50);default:'default'" json:"category"`
+	Category    CategoryType   `gorm:"type:varchar(50)" json:"category"`
 	CreatedAt   time.Time      `json:"-"`
 	UpdatedAt   time.Time      `json:"-"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
@@ -42,9 +39,7 @@ func (b *Bookmark) BeforeCreate(tx *gorm.DB) error {
 	if b.DateCreated.IsZero() {
 		b.DateCreated = time.Now()
 	}
-	if b.Category == "" {
-		b.Category = DefaultCategory
-	}
+	// Allow empty category - no default assignment
 	return nil
 }
 
@@ -175,10 +170,7 @@ func (b *Bookmark) validate() error {
 		return fmt.Errorf("folder path is required")
 	}
 
-	// Set default category if empty
-	if b.Category == "" {
-		b.Category = DefaultCategory
-	}
+	// Allow empty category - no default assignment
 
 	return nil
 }

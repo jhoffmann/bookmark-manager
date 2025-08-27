@@ -7,11 +7,11 @@ import (
 
 // Color palette for the bookmark manager TUI
 var (
-	Primary = lipgloss.Color("63")  // Purple
-	Success = lipgloss.Color("42")  // Green
-	Warning = lipgloss.Color("214") // Orange
-	Error   = lipgloss.Color("196") // Red
-	Muted   = lipgloss.Color("245") // Gray
+	Primary = lipgloss.Color("#e49fdb") // Magenta
+	Success = lipgloss.Color("#7ac68f") // Green
+	Warning = lipgloss.Color("#cdb36b") // Yellow
+	Error   = lipgloss.Color("#fc9c93") // Red
+	Muted   = lipgloss.Color("#404040") // Gray
 )
 
 // Input styles

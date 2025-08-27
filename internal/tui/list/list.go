@@ -160,10 +160,12 @@ func (m *Model) LoadBookmarks() tea.Cmd {
 		// Extract unique categories
 		categorySet := make(map[string]bool)
 		categorySet["All"] = true
-		categorySet["default"] = true
 
 		for _, b := range allBookmarks {
-			categorySet[string(b.Category)] = true
+			// Only add non-empty categories to the category set
+			if string(b.Category) != "" {
+				categorySet[string(b.Category)] = true
+			}
 		}
 
 		categories := make([]string, 0, len(categorySet))

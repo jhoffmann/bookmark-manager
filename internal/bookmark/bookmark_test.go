@@ -54,9 +54,9 @@ func TestBookmark_BeforeCreate(t *testing.T) {
 		wantCat  CategoryType
 	}{
 		{
-			name:     "sets default category when empty",
+			name:     "preserves empty category",
 			bookmark: &Bookmark{Folder: "/test"},
-			wantCat:  DefaultCategory,
+			wantCat:  "",
 		},
 		{
 			name:     "preserves existing category",
@@ -169,7 +169,7 @@ func TestBookmark_Save_Validation(t *testing.T) {
 	}{
 		{
 			name:     "empty folder",
-			bookmark: &Bookmark{Category: "default"},
+			bookmark: &Bookmark{Category: "work"},
 			wantErr:  true,
 		},
 		{
@@ -178,12 +178,12 @@ func TestBookmark_Save_Validation(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "valid bookmark with default category",
-			bookmark: &Bookmark{Folder: "/test", Category: "default"},
+			name:     "valid bookmark with category",
+			bookmark: &Bookmark{Folder: "/test", Category: "work"},
 			wantErr:  false,
 		},
 		{
-			name:     "empty category gets default",
+			name:     "valid bookmark with empty category",
 			bookmark: &Bookmark{Folder: "/test", Category: ""},
 			wantErr:  false,
 		},
@@ -196,9 +196,9 @@ func TestBookmark_Save_Validation(t *testing.T) {
 				t.Errorf("Save() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			// Check that empty category was set to default
-			if tt.name == "empty category gets default" && tt.bookmark.Category != DefaultCategory {
-				t.Errorf("Save() should set empty category to default, got %v", tt.bookmark.Category)
+			// Check that empty category remains empty
+			if tt.name == "valid bookmark with empty category" && tt.bookmark.Category != "" {
+				t.Errorf("Save() should preserve empty category, got %v", tt.bookmark.Category)
 			}
 		})
 	}
@@ -213,7 +213,7 @@ func TestBookmark_Delete(t *testing.T) {
 	// Create a bookmark to delete
 	bookmark := &Bookmark{
 		Folder:   "/home/user/temp",
-		Category: "default",
+		Category: "work",
 	}
 
 	err := bookmark.Save(service)
@@ -260,7 +260,7 @@ func TestSearchByCategory(t *testing.T) {
 		{Folder: "/work/project1", Category: "work"},
 		{Folder: "/work/project2", Category: "work"},
 		{Folder: "/personal/docs", Category: "personal"},
-		{Folder: "/default/folder", Category: "default"},
+		{Folder: "/default/folder", Category: "misc"},
 	}
 
 	for _, b := range bookmarks {
@@ -357,7 +357,7 @@ func TestList(t *testing.T) {
 
 	// Create test bookmarks
 	bookmarks := []*Bookmark{
-		{Folder: "/folder1", Category: "default"},
+		{Folder: "/folder1", Category: "work"},
 		{Folder: "/folder2", Category: "work"},
 		{Folder: "/folder3", Category: "personal"},
 	}
@@ -412,7 +412,7 @@ func TestSearchByFolder(t *testing.T) {
 		{Folder: "/home/user/documents", Category: "personal"},
 		{Folder: "/home/user/downloads", Category: "personal"},
 		{Folder: "/work/projects", Category: "work"},
-		{Folder: "/tmp/temp", Category: "default"},
+		{Folder: "/tmp/temp", Category: "work"},
 	}
 
 	for _, b := range bookmarks {
@@ -460,12 +460,12 @@ func TestBookmark_Validate(t *testing.T) {
 	}{
 		{
 			name:     "valid bookmark",
-			bookmark: &Bookmark{Folder: "/test", Category: "default"},
+			bookmark: &Bookmark{Folder: "/test", Category: "work"},
 			wantErr:  false,
 		},
 		{
 			name:     "empty folder",
-			bookmark: &Bookmark{Category: "default"},
+			bookmark: &Bookmark{Category: "work"},
 			wantErr:  true,
 		},
 		{
@@ -474,7 +474,7 @@ func TestBookmark_Validate(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "empty category gets default",
+			name:     "empty category allowed",
 			bookmark: &Bookmark{Folder: "/test", Category: ""},
 			wantErr:  false,
 		},
@@ -487,9 +487,9 @@ func TestBookmark_Validate(t *testing.T) {
 				t.Errorf("validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			// Check that empty category was set to default
-			if tt.name == "empty category gets default" && tt.bookmark.Category != DefaultCategory {
-				t.Errorf("validate() should set empty category to default, got %v", tt.bookmark.Category)
+			// Check that empty category remains empty
+			if tt.name == "empty category allowed" && tt.bookmark.Category != "" {
+				t.Errorf("validate() should preserve empty category, got %v", tt.bookmark.Category)
 			}
 		})
 	}
@@ -512,9 +512,10 @@ func TestBookmark_String(t *testing.T) {
 }
 
 func TestDefaultCategory(t *testing.T) {
-	// Test that default category constant is properly defined
-	if DefaultCategory != "default" {
-		t.Errorf("DefaultCategory = %v, want 'default'", DefaultCategory)
+	// Test that CategoryType can be empty
+	var emptyCategory CategoryType = ""
+	if string(emptyCategory) != "" {
+		t.Errorf("Empty CategoryType should be empty string, got %v", emptyCategory)
 	}
 }
 
@@ -529,7 +530,7 @@ func TestBookmark_Integration(t *testing.T) {
 	bookmarks := []*Bookmark{
 		{Folder: "/work/project1", Category: "work"},
 		{Folder: "/home/documents", Category: "personal"},
-		{Folder: "/tmp", Category: "default"},
+		{Folder: "/tmp", Category: "work"},
 		{Folder: "/study/materials", Category: "education"},
 	}
 
@@ -557,8 +558,8 @@ func TestBookmark_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SearchByCategory failed: %v", err)
 	}
-	if len(workBookmarks) != 1 {
-		t.Errorf("Expected 1 work bookmark, got %d", len(workBookmarks))
+	if len(workBookmarks) != 2 {
+		t.Errorf("Expected 2 work bookmarks, got %d", len(workBookmarks))
 	}
 
 	// Test search by custom category
