@@ -80,10 +80,29 @@ func (d *Database) migrate() error {
 
 // migrateWithLogger runs auto-migration for all models with custom logger
 func (d *Database) migrateWithLogger(appLogger Logger) error {
-	// Auto-migrate models when they are defined
-	// Example: err := d.db.AutoMigrate(&Model{})
+	// Auto-migrate bookmark model
+	if err := d.db.AutoMigrate(&BookmarkModel{}); err != nil {
+		return fmt.Errorf("failed to auto-migrate bookmark table: %w", err)
+	}
 	appLogger.Printf("Database migration completed successfully")
 	return nil
+}
+
+// BookmarkModel represents the bookmark table structure for migration
+// This is a minimal model definition for auto-migration purposes
+type BookmarkModel struct {
+	ID          uint    `gorm:"primaryKey"`
+	Folder      string  `gorm:"not null"`
+	DateCreated string  `gorm:"type:datetime"`
+	Category    string  `gorm:"type:varchar(50);default:'default'"`
+	CreatedAt   string  `gorm:"type:datetime"`
+	UpdatedAt   string  `gorm:"type:datetime"`
+	DeletedAt   *string `gorm:"index;type:datetime"`
+}
+
+// TableName specifies the table name for the bookmark model
+func (BookmarkModel) TableName() string {
+	return "bookmarks"
 }
 
 // Close closes the database connection
