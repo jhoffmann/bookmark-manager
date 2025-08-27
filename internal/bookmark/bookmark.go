@@ -100,7 +100,7 @@ func SearchByCategory(service *Service, category CategoryType) ([]*Bookmark, err
 	}
 
 	var bookmarks []*Bookmark
-	if err := gormDB.Where("category = ?", category).Order("date_created DESC").Find(&bookmarks).Error; err != nil {
+	if err := gormDB.Where("category = ?", category).Order("category, folder").Find(&bookmarks).Error; err != nil {
 		return nil, fmt.Errorf("failed to search bookmarks by category: %w", err)
 	}
 
@@ -133,7 +133,7 @@ func List(service *Service, limit, offset int) ([]*Bookmark, error) {
 	}
 
 	var bookmarks []*Bookmark
-	query := gormDB.Order("date_created DESC")
+	query := gormDB.Order("category, folder")
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -157,7 +157,7 @@ func SearchByFolder(service *Service, folderPath string) ([]*Bookmark, error) {
 	}
 
 	var bookmarks []*Bookmark
-	if err := gormDB.Where("folder LIKE ?", "%"+folderPath+"%").Order("date_created DESC").Find(&bookmarks).Error; err != nil {
+	if err := gormDB.Where("folder LIKE ?", "%"+folderPath+"%").Order("category, folder").Find(&bookmarks).Error; err != nil {
 		return nil, fmt.Errorf("failed to search bookmarks by folder: %w", err)
 	}
 
