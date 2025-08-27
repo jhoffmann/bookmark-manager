@@ -4,7 +4,6 @@ package database
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/jhoffmann/bookmark-manager/internal/config"
 	"gorm.io/driver/sqlite"
@@ -26,26 +25,8 @@ type Database struct {
 	db *gorm.DB
 }
 
-// Logger interface for dependency injection in tests
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
-
-// DefaultLogger implements Logger interface
-type DefaultLogger struct{}
-
-// Printf implements the Logger interface
-func (l *DefaultLogger) Printf(format string, v ...interface{}) {
-	log.Printf(format, v...)
-}
-
 // NewDatabase creates a new database connection with the provided configuration
 func NewDatabase(cfg *config.Config) (DB, error) {
-	return NewDatabaseWithLogger(cfg, &DefaultLogger{})
-}
-
-// NewDatabaseWithLogger creates a new database connection with custom logger (for testing)
-func NewDatabaseWithLogger(cfg *config.Config, appLogger Logger) (DB, error) {
 	// Configure GORM logger level
 	logLevel := logger.Warn
 	switch cfg.GetLogLevel() {
@@ -66,7 +47,7 @@ func NewDatabaseWithLogger(cfg *config.Config, appLogger Logger) (DB, error) {
 
 	database := &Database{db: db}
 
-	if err := database.migrateWithLogger(appLogger); err != nil {
+	if err := database.migrate(); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
@@ -75,16 +56,10 @@ func NewDatabaseWithLogger(cfg *config.Config, appLogger Logger) (DB, error) {
 
 // migrate runs auto-migration for all models
 func (d *Database) migrate() error {
-	return d.migrateWithLogger(&DefaultLogger{})
-}
-
-// migrateWithLogger runs auto-migration for all models with custom logger
-func (d *Database) migrateWithLogger(appLogger Logger) error {
 	// Auto-migrate bookmark model
 	if err := d.db.AutoMigrate(&BookmarkModel{}); err != nil {
 		return fmt.Errorf("failed to auto-migrate bookmark table: %w", err)
 	}
-	appLogger.Printf("Database migration completed successfully")
 	return nil
 }
 
