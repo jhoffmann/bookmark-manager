@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 // Model represents the category editing state
 type Model struct {
 	textInput textinput.Model
-	bookmark  *bookmark.Bookmark
+	bookmark  *models.Bookmark
 	visible   bool
 	result    string
 	submitted bool
@@ -46,7 +46,7 @@ func New() Model {
 }
 
 // Show displays the edit dialog with the given bookmark
-func (m *Model) Show(bookmark *bookmark.Bookmark) {
+func (m *Model) Show(bookmark *models.Bookmark) {
 	m.bookmark = bookmark
 	m.visible = true
 	m.submitted = false
@@ -134,7 +134,7 @@ func (m Model) View() string {
 // Result represents the result of the category edit
 type Result struct {
 	NewCategory string
-	Bookmark    *bookmark.Bookmark
+	Bookmark    *models.Bookmark
 	Submitted   bool
 	Cancelled   bool
 }

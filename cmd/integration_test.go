@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/jhoffmann/bookmark-manager/internal/app"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
 	"github.com/jhoffmann/bookmark-manager/internal/config"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 )
 
 // TestIntegration tests the end-to-end CLI functionality
@@ -34,20 +34,20 @@ func TestIntegration(t *testing.T) {
 	defer appInstance.Close()
 
 	// Test adding bookmarks
-	testBookmarks := []*bookmark.Bookmark{
+	testBookmarks := []*models.Bookmark{
 		{Folder: "/test/work/project1", Category: "work"},
 		{Folder: "/test/personal/docs", Category: "personal"},
 		{Folder: "/test/temp", Category: "test"},
 	}
 
 	for _, b := range testBookmarks {
-		if err := b.Save(appInstance.Service); err != nil {
+		if err := appInstance.Service.Save(b); err != nil {
 			t.Fatalf("Failed to save bookmark: %v", err)
 		}
 	}
 
 	// Test listing all bookmarks
-	allBookmarks, err := bookmark.List(appInstance.Service, 0, 0)
+	allBookmarks, err := appInstance.Service.List(0, 0)
 	if err != nil {
 		t.Fatalf("Failed to list bookmarks: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Test searching by category
-	workBookmarks, err := bookmark.SearchByCategory(appInstance.Service, "work")
+	workBookmarks, err := appInstance.Service.SearchByCategory("work")
 	if err != nil {
 		t.Fatalf("Failed to search by category: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Test searching by folder
-	tempBookmarks, err := bookmark.SearchByFolder(appInstance.Service, "temp")
+	tempBookmarks, err := appInstance.Service.SearchByFolder("temp")
 	if err != nil {
 		t.Fatalf("Failed to search by folder: %v", err)
 	}
@@ -81,12 +81,12 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Test deleting a bookmark
-	if err := testBookmarks[0].Delete(appInstance.Service); err != nil {
+	if err := appInstance.Service.Delete(testBookmarks[0]); err != nil {
 		t.Fatalf("Failed to delete bookmark: %v", err)
 	}
 
 	// Verify deletion
-	remainingBookmarks, err := bookmark.List(appInstance.Service, 0, 0)
+	remainingBookmarks, err := appInstance.Service.List(0, 0)
 	if err != nil {
 		t.Fatalf("Failed to list bookmarks after deletion: %v", err)
 	}
@@ -151,19 +151,19 @@ func TestCustomCategories(t *testing.T) {
 	}
 
 	for i, category := range customCategories {
-		bookmark := &bookmark.Bookmark{
+		bookmark := &models.Bookmark{
 			Folder:   filepath.Join("/test", category, "folder"+string(rune('0'+i))),
-			Category: bookmark.CategoryType(category),
+			Category: models.CategoryType(category),
 		}
 
-		if err := bookmark.Save(appInstance.Service); err != nil {
+		if err := appInstance.Service.Save(bookmark); err != nil {
 			t.Fatalf("Failed to save bookmark with category %s: %v", category, err)
 		}
 	}
 
 	// Test that we can search by each custom category
 	for _, category := range customCategories {
-		bookmarks, err := bookmark.SearchByCategory(appInstance.Service, bookmark.CategoryType(category))
+		bookmarks, err := appInstance.Service.SearchByCategory(models.CategoryType(category))
 		if err != nil {
 			t.Fatalf("Failed to search by category %s: %v", category, err)
 		}
@@ -178,7 +178,7 @@ func TestCustomCategories(t *testing.T) {
 	}
 
 	// Test that total count is correct
-	allBookmarks, err := bookmark.List(appInstance.Service, 0, 0)
+	allBookmarks, err := appInstance.Service.List(0, 0)
 	if err != nil {
 		t.Fatalf("Failed to list all bookmarks: %v", err)
 	}

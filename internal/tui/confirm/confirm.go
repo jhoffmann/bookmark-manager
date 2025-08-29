@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
@@ -24,7 +24,7 @@ func (i choiceItem) Description() string { return i.description }
 // Model represents the confirmation state
 type Model struct {
 	list     list.Model
-	bookmark *bookmark.Bookmark
+	bookmark *models.Bookmark
 	visible  bool
 	result   bool
 	chosen   bool
@@ -53,7 +53,7 @@ func New() Model {
 }
 
 // Show displays the confirmation with the given bookmark
-func (m *Model) Show(bookmark *bookmark.Bookmark, message string) {
+func (m *Model) Show(bookmark *models.Bookmark, message string) {
 	m.bookmark = bookmark
 	m.visible = true
 	m.chosen = false
@@ -128,7 +128,7 @@ func (m Model) View() string {
 // Result represents the result of the confirmation
 type Result struct {
 	Confirmed bool
-	Bookmark  *bookmark.Bookmark
+	Bookmark  *models.Bookmark
 }
 
 // GetResult returns the result based on current state

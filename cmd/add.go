@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/jhoffmann/bookmark-manager/internal/app"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/styles"
 	"github.com/spf13/cobra"
 )
@@ -48,14 +48,14 @@ func runAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// Determine category
-	var category bookmark.CategoryType
+	var category models.CategoryType
 	if len(args) > 0 && args[0] != "" {
-		category = bookmark.CategoryType(args[0])
+		category = models.CategoryType(args[0])
 	}
 	// If no category provided, it will remain empty
 
 	// Check if bookmark already exists
-	existingBookmarks, err := bookmark.SearchByFolder(appInstance.Service, absPath)
+	existingBookmarks, err := appInstance.Service.SearchByFolder(absPath)
 	if err != nil {
 		fmt.Printf("%s Failed to check for existing bookmarks: %v\n",
 			styles.ErrorMessage.Render("✗"), err)
@@ -74,13 +74,13 @@ func runAdd(cmd *cobra.Command, args []string) {
 	}
 
 	// Create new bookmark
-	newBookmark := &bookmark.Bookmark{
+	newBookmark := &models.Bookmark{
 		Folder:   absPath,
 		Category: category,
 	}
 
 	// Save bookmark
-	if err := newBookmark.Save(appInstance.Service); err != nil {
+	if err := appInstance.Service.Save(newBookmark); err != nil {
 		fmt.Printf("%s Failed to save bookmark: %v\n",
 			styles.ErrorMessage.Render("✗"), err)
 		os.Exit(1)

@@ -2,10 +2,6 @@
 package list
 
 import (
-	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -14,7 +10,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
+	svc "github.com/jhoffmann/bookmark-manager/internal/service"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/confirm"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/edit"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/styles"
@@ -24,27 +21,28 @@ var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 // Model represents the main TUI state for the bookmark list
 type Model struct {
-	list           list.Model
-	categories     []string
-	activeCategory string
-	filter         textinput.Model
-	filterFocused  bool
-	bookmarks      []*bookmark.Bookmark
-	allBookmarks   []*bookmark.Bookmark
-	service        *bookmark.Service
-	keys           keyMap
-	confirmDialog  confirm.Model
-	editDialog     edit.Model
-	showingDialog  bool
-	showingEdit    bool
-	windowSize     tea.WindowSizeMsg
-	err            error
-	cwdFile        string
+	list            list.Model
+	categories      []string
+	activeCategory  string
+	filter          textinput.Model
+	filterFocused   bool
+	bookmarks       []*models.Bookmark
+	allBookmarks    []*models.Bookmark
+	bookmarkService *svc.Bookmarks
+	folderService   *svc.Folders
+	keys            keyMap
+	confirmDialog   confirm.Model
+	editDialog      edit.Model
+	showingDialog   bool
+	showingEdit     bool
+	windowSize      tea.WindowSizeMsg
+	err             error
+	cwdFile         string
 }
 
 // bookmarkItem implements list.Item for use with bubbles/list
 type bookmarkItem struct {
-	bookmark *bookmark.Bookmark
+	bookmark *models.Bookmark
 }
 
 func (i bookmarkItem) FilterValue() string {
@@ -110,7 +108,7 @@ func DefaultKeyMap() keyMap {
 }
 
 // New creates a new list model
-func New(service *bookmark.Service, initialCategory string) Model {
+func New(service *svc.Bookmarks, initialCategory string) Model {
 	// Initialize text input for filtering
 	filterInput := textinput.New()
 	filterInput.Placeholder = "Type to filter bookmarks..."
@@ -143,15 +141,16 @@ func New(service *bookmark.Service, initialCategory string) Model {
 	}
 
 	return Model{
-		list:           l,
-		categories:     []string{"All"},
-		activeCategory: initialCategory,
-		filter:         filterInput,
-		filterFocused:  false,
-		keys:           keys,
-		confirmDialog:  confirm.New(),
-		editDialog:     edit.New(),
-		service:        service,
+		list:            l,
+		categories:      []string{"All"},
+		activeCategory:  initialCategory,
+		filter:          filterInput,
+		filterFocused:   false,
+		keys:            keys,
+		confirmDialog:   confirm.New(),
+		editDialog:      edit.New(),
+		bookmarkService: service,
+		folderService:   svc.NewFolders(),
 	}
 }
 
@@ -164,7 +163,7 @@ func (m Model) Init() tea.Cmd {
 func (m *Model) LoadBookmarks() tea.Cmd {
 	return func() tea.Msg {
 		// Load all bookmarks
-		allBookmarks, err := bookmark.List(m.service, 0, 0)
+		allBookmarks, err := m.bookmarkService.List(0, 0)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -413,7 +412,7 @@ func (m *Model) prevCategory() tea.Cmd {
 
 func (m *Model) filterByCategory() tea.Cmd {
 	return func() tea.Msg {
-		var filtered []*bookmark.Bookmark
+		var filtered []*models.Bookmark
 
 		if m.activeCategory == "All" {
 			filtered = m.allBookmarks
@@ -433,12 +432,12 @@ func (m *Model) applyFilter() tea.Cmd {
 	return func() tea.Msg {
 		filterText := strings.ToLower(strings.TrimSpace(m.filter.Value()))
 
-		var filtered []*bookmark.Bookmark
+		var filtered []*models.Bookmark
 		source := m.allBookmarks
 
 		// First filter by category
 		if m.activeCategory != "All" {
-			source = []*bookmark.Bookmark{}
+			source = []*models.Bookmark{}
 			for _, b := range m.allBookmarks {
 				if string(b.Category) == m.activeCategory {
 					source = append(source, b)
@@ -462,22 +461,22 @@ func (m *Model) applyFilter() tea.Cmd {
 	}
 }
 
-func (m *Model) deleteBookmark(b *bookmark.Bookmark) tea.Cmd {
+func (m *Model) deleteBookmark(b *models.Bookmark) tea.Cmd {
 	return func() tea.Msg {
-		if err := b.Delete(m.service); err != nil {
+		if err := m.bookmarkService.Delete(b); err != nil {
 			return errMsg{err}
 		}
 		return bookmarkDeletedMsg{}
 	}
 }
 
-func (m *Model) updateBookmarkCategory(b *bookmark.Bookmark, newCategory string) tea.Cmd {
+func (m *Model) updateBookmarkCategory(b *models.Bookmark, newCategory string) tea.Cmd {
 	return func() tea.Msg {
 		// Update the bookmark's category
-		b.Category = bookmark.CategoryType(newCategory)
+		b.Category = models.CategoryType(newCategory)
 
 		// Save the updated bookmark
-		if err := b.Save(m.service); err != nil {
+		if err := m.bookmarkService.Save(b); err != nil {
 			return errMsg{err}
 		}
 		return bookmarkUpdatedMsg{}
@@ -488,26 +487,15 @@ func (m *Model) openFolder(path string) tea.Cmd {
 	return func() tea.Msg {
 		// In cwd-file mode, write the path to file and quit
 		if m.cwdFile != "" {
-			if err := os.WriteFile(m.cwdFile, []byte(path), 0644); err != nil {
-				return errMsg{fmt.Errorf("failed to write to cwd file: %w", err)}
+			if err := m.folderService.WriteCwdFile(m.cwdFile, path); err != nil {
+				return errMsg{err}
 			}
 			return tea.Quit()
 		}
 
 		// Normal mode: open in file manager
-		var cmd *exec.Cmd
-
-		switch runtime.GOOS {
-		case "darwin":
-			cmd = exec.Command("open", path)
-		case "windows":
-			cmd = exec.Command("explorer", path)
-		default: // linux and others
-			cmd = exec.Command("xdg-open", path)
-		}
-
-		if err := cmd.Run(); err != nil {
-			return errMsg{fmt.Errorf("failed to open folder: %w", err)}
+		if err := m.folderService.OpenInFileManager(path); err != nil {
+			return errMsg{err}
 		}
 
 		return nil
@@ -516,12 +504,12 @@ func (m *Model) openFolder(path string) tea.Cmd {
 
 // Messages
 type bookmarksLoadedMsg struct {
-	bookmarks  []*bookmark.Bookmark
+	bookmarks  []*models.Bookmark
 	categories []string
 }
 
 type bookmarksFilteredMsg struct {
-	bookmarks []*bookmark.Bookmark
+	bookmarks []*models.Bookmark
 }
 
 type bookmarkDeletedMsg struct{}

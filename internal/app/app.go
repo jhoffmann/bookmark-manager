@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
 	"github.com/jhoffmann/bookmark-manager/internal/config"
 	"github.com/jhoffmann/bookmark-manager/internal/database"
+	"github.com/jhoffmann/bookmark-manager/internal/service"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/styles"
 )
 
 // App holds the database connection and bookmark service
 type App struct {
 	DB      database.DB
-	Service *bookmark.Service
+	Service *service.Bookmarks
 	Config  *config.Config
 }
 
@@ -39,11 +39,11 @@ func Initialize() (*App, error) {
 	}
 
 	// Initialize bookmark service
-	service := bookmark.NewService(db)
+	bookmarkService := service.NewBookmarks(db)
 
 	return &App{
 		DB:      db,
-		Service: service,
+		Service: bookmarkService,
 		Config:  cfg,
 	}, nil
 }
@@ -78,11 +78,11 @@ func InitializeWithConfig(cfg *config.Config) (*App, error) {
 	}
 
 	// Initialize bookmark service
-	service := bookmark.NewService(db)
+	bookmarkService := service.NewBookmarks(db)
 
 	return &App{
 		DB:      db,
-		Service: service,
+		Service: bookmarkService,
 		Config:  cfg,
 	}, nil
 }

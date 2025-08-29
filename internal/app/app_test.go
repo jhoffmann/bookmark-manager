@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
 	"github.com/jhoffmann/bookmark-manager/internal/config"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 )
 
 func TestInitialize(t *testing.T) {
@@ -70,12 +70,12 @@ func TestInitializeWithConfig(t *testing.T) {
 	}
 
 	// Test that we can use the service
-	testBookmark := &bookmark.Bookmark{
+	testBookmark := &models.Bookmark{
 		Folder:   "/test/folder",
 		Category: "test",
 	}
 
-	if err := testBookmark.Save(app.Service); err != nil {
+	if err := app.Service.Save(testBookmark); err != nil {
 		t.Fatalf("Failed to save test bookmark: %v", err)
 	}
 
@@ -109,17 +109,17 @@ func TestInitializeInMemory(t *testing.T) {
 	}
 
 	// Test that we can use the service with in-memory database
-	testBookmark := &bookmark.Bookmark{
+	testBookmark := &models.Bookmark{
 		Folder:   "/test/memory",
 		Category: "memory-test",
 	}
 
-	if err := testBookmark.Save(app.Service); err != nil {
+	if err := app.Service.Save(testBookmark); err != nil {
 		t.Fatalf("Failed to save test bookmark: %v", err)
 	}
 
 	// Verify the bookmark was saved
-	retrieved, err := bookmark.GetByID(app.Service, testBookmark.ID)
+	retrieved, err := app.Service.GetByID(testBookmark.ID)
 	if err != nil {
 		t.Fatalf("Failed to retrieve test bookmark: %v", err)
 	}

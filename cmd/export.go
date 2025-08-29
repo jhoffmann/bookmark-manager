@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/jhoffmann/bookmark-manager/internal/app"
-	"github.com/jhoffmann/bookmark-manager/internal/bookmark"
+	"github.com/jhoffmann/bookmark-manager/internal/models"
 	"github.com/jhoffmann/bookmark-manager/internal/tui/styles"
 	"github.com/spf13/cobra"
 )
@@ -41,32 +41,33 @@ func runExport(cmd *cobra.Command, args []string) {
 	defer appInstance.Close()
 
 	// Parse arguments
-	var category bookmark.CategoryType
-	var filter string
-
+	var category models.CategoryType
 	if len(args) > 0 && args[0] != "" {
-		category = bookmark.CategoryType(args[0])
+		// Validate and set category
+		category = models.CategoryType(args[0])
 	}
+	// If category is empty, we export all categories
 
+	// Parse filter (second argument)
+	var filter string
 	if len(args) > 1 {
 		filter = args[1]
 	}
 
-	// Fetch bookmarks based on criteria
-	var bookmarks []*bookmark.Bookmark
+	var bookmarks []*models.Bookmark
 	var err error
 
+	// Filter by category if specified
 	if category != "" {
-		// Search by category
-		bookmarks, err = bookmark.SearchByCategory(appInstance.Service, category)
+		bookmarks, err = appInstance.Service.SearchByCategory(category)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s Failed to search bookmarks by category: %v\n",
+			fmt.Printf("%s Failed to search bookmarks by category: %v\n",
 				styles.ErrorMessage.Render("✗"), err)
 			os.Exit(1)
 		}
 	} else {
 		// Get all bookmarks
-		bookmarks, err = bookmark.List(appInstance.Service, 0, 0)
+		bookmarks, err = appInstance.Service.List(0, 0)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s Failed to list bookmarks: %v\n",
 				styles.ErrorMessage.Render("✗"), err)
@@ -76,7 +77,7 @@ func runExport(cmd *cobra.Command, args []string) {
 
 	// Apply filter if specified
 	if filter != "" {
-		filteredBookmarks := make([]*bookmark.Bookmark, 0)
+		filteredBookmarks := make([]*models.Bookmark, 0)
 		filterLower := strings.ToLower(filter)
 
 		for _, b := range bookmarks {
