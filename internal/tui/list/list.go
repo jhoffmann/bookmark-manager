@@ -38,6 +38,7 @@ type Model struct {
 	windowSize      tea.WindowSizeMsg
 	err             error
 	cwdFile         string
+	savedCursor     int // Store cursor position when dialogs open
 }
 
 // bookmarkItem implements list.Item for use with bubbles/list
@@ -212,6 +213,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if result.Confirmed && result.Bookmark != nil {
 				return m, m.deleteBookmark(result.Bookmark)
 			}
+			// Dialog was cancelled - restore saved cursor position
+			m.list.Select(m.savedCursor)
+			return m, nil
 		}
 
 		return m, confirmCmd
@@ -229,6 +233,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if result.Submitted && result.Bookmark != nil {
 				return m, m.updateBookmarkCategory(result.Bookmark, result.NewCategory)
 			}
+			// Dialog was cancelled - restore saved cursor position
+			m.list.Select(m.savedCursor)
+			return m, nil
 		}
 
 		return m, editCmd
@@ -282,6 +289,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keys.Delete):
 			if selectedItem, ok := m.list.SelectedItem().(bookmarkItem); ok {
+				// Save current cursor position before opening dialog
+				m.savedCursor = m.list.Index()
 				m.confirmDialog.Show(
 					selectedItem.bookmark,
 					"", // No longer needed with new simple dialog
@@ -295,6 +304,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, m.keys.Edit):
 			if selectedItem, ok := m.list.SelectedItem().(bookmarkItem); ok {
+				// Save current cursor position before opening dialog
+				m.savedCursor = m.list.Index()
 				m.editDialog.Show(selectedItem.bookmark)
 				m.showingEdit = true
 			}
